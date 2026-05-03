@@ -1,0 +1,31 @@
+# config/settings.yaml
+# ─────────────────────
+# Framework-wide configuration.
+# Override any value with an environment variable prefixed STF_
+# (e.g., STF_DATABASE__HOST=my-host overrides database.host)
+
+framework:
+  name: SQL Transformation Framework
+  version: "1.0.0"
+  transformations_dir: transformations
+  log_file: logs/framework.log
+
+database:
+  adapter: postgres          # postgres | snowflake | bigquery | redshift
+  host: localhost
+  port: 5432
+  name: analytics
+  user: etl_user
+  password: "${DB_PASSWORD}" # Resolved from environment at runtime
+  schema: public
+  pool_size: 5
+  connect_timeout: 30
+
+execution:
+  fail_fast: true            # Stop pipeline on first step failure
+  max_retries: 2             # Retry failed steps this many times
+  retry_delay_seconds: 5
+
+logging:
+  level: INFO                # DEBUG | INFO | WARNING | ERROR
+  format: structured         # structured | simple

@@ -1,0 +1,51 @@
+pipeline:
+  name: campaign_performance
+  description: >
+    Transforms raw ad platform data into daily campaign performance metrics
+    with spend, impressions, clicks, and cost-per-acquisition.
+  version: "1.0"
+  owner: marketing@bamcreatives.com
+  schedule: "0 6 * * *"
+  fail_fast: true
+
+  source: raw.ad_events
+  target: analytics.campaign_daily
+
+  steps:
+    - name: remove_duplicates
+      transform: cleaning/deduplication
+      params:
+        unique_key: event_id
+        order_by: created_at
+
+    - name: cast_types
+      transform: cleaning/type_casting
+      params:
+        date_columns: event_date
+        num_columns: spend, impressions, clicks, conversions
+        int_columns: campaign_id
+
+    - name: daily_rollup
+      transform: aggregation/daily_rollup
+      params:
+        date_column: event_date
+        group_by: campaign_id, channel, region
+        sum_column: spend
+        count_column: event_id
+
+    - name: validate_unique_keys
+      transform: validation/uniqueness_check
+      params:
+        unique_key: report_date, campaign_id, channel
+
+    - name: validate_spend_range
+      transform: validation/range_check
+      params:
+        column: total_value
+        min_value: 0
+        max_value: 500000
+
+  tags:
+    - marketing
+    - campaigns
+    - daily

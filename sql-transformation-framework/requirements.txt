@@ -1,0 +1,15 @@
+# Core
+pyyaml>=6.0
+python-dotenv>=1.0
+
+# Database adapters (install only what you need)
+psycopg2-binary>=2.9       # PostgreSQL
+# snowflake-connector-python>=3.0  # Snowflake
+# google-cloud-bigquery>=3.0       # BigQuery
+
+# Testing
+pytest>=7.4
+pytest-cov>=4.1
+
+# Linting (optional, for dev)
+ruff>=0.1

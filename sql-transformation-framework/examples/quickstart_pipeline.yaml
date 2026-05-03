@@ -1,0 +1,41 @@
+pipeline:
+  name: quickstart_example
+  description: >
+    A minimal example pipeline to help you get started.
+    Replace source/target and adjust steps for your use case.
+  version: "1.0"
+  owner: you@yourcompany.com
+
+  source: raw.your_table          # ← Replace with your source table
+  target: analytics.your_output   # ← Replace with your target table
+
+  steps:
+    # Step 1: Remove duplicate rows
+    - name: remove_duplicates
+      transform: cleaning/deduplication
+      params:
+        unique_key: id             # ← Replace with your primary key
+        order_by: updated_at       # ← Replace with your recency column
+
+    # Step 2: Cast column types
+    - name: cast_types
+      transform: cleaning/type_casting
+      params:
+        date_columns: created_at   # ← Replace with your date columns
+        num_columns: amount        # ← Replace with your numeric columns
+        int_columns: quantity      # ← Replace with your integer columns
+
+    # Step 3: Roll up to daily metrics
+    - name: daily_aggregation
+      transform: aggregation/daily_rollup
+      params:
+        date_column: created_at    # ← Date to group by
+        group_by: category         # ← Additional grouping
+        sum_column: amount         # ← Metric to sum
+        count_column: id           # ← Column to count
+
+    # Step 4: Validate output
+    - name: validate_not_null
+      transform: validation/not_null_check
+      params:
+        columns: report_date, total_value

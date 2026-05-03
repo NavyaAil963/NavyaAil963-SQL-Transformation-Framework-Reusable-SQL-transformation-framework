@@ -1,0 +1,57 @@
+pipeline:
+  name: orders_daily_rollup
+  description: >
+    Cleans raw order data, deduplicates, casts types,
+    and aggregates into daily revenue summaries.
+  version: "1.2"
+  owner: data-team@bamcreatives.com
+  schedule: "0 3 * * *"          # daily at 3am UTC
+  fail_fast: true
+
+  source: raw.orders
+  target: analytics.orders_daily
+
+  steps:
+    - name: remove_duplicates
+      transform: cleaning/deduplication
+      params:
+        unique_key: order_id
+        order_by: updated_at
+
+    - name: cast_types
+      transform: cleaning/type_casting
+      params:
+        date_columns: order_date
+        num_columns: amount
+        int_columns: quantity
+
+    - name: drop_nulls
+      transform: cleaning/null_handler
+      params:
+        columns: order_id, order_date, amount
+        strategy: drop
+
+    - name: daily_aggregation
+      transform: aggregation/daily_rollup
+      params:
+        date_column: order_date
+        group_by: region, product_category
+        sum_column: amount
+        count_column: order_id
+
+    - name: validate_not_null
+      transform: validation/not_null_check
+      params:
+        columns: report_date, total_value
+
+    - name: validate_revenue_range
+      transform: validation/range_check
+      params:
+        column: total_value
+        min_value: 0
+        max_value: 10000000
+
+  tags:
+    - ecommerce
+    - revenue
+    - daily

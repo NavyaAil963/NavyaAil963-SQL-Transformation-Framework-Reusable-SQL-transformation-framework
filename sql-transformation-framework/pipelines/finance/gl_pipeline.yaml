@@ -1,0 +1,57 @@
+pipeline:
+  name: general_ledger_daily
+  description: >
+    Processes raw general ledger entries — deduplicates journal entries,
+    validates debit/credit balance, and produces daily account summaries.
+  version: "2.1"
+  owner: finance@bamcreatives.com
+  schedule: "0 1 * * *"
+  fail_fast: true
+
+  source: raw.gl_entries
+  target: analytics.gl_daily
+
+  steps:
+    - name: remove_duplicates
+      transform: cleaning/deduplication
+      params:
+        unique_key: entry_id
+        order_by: posted_at
+
+    - name: cast_types
+      transform: cleaning/type_casting
+      params:
+        date_columns: entry_date
+        num_columns: debit_amount, credit_amount
+        int_columns: account_id, cost_center_id
+
+    - name: drop_null_amounts
+      transform: cleaning/null_handler
+      params:
+        columns: entry_date, account_id
+        strategy: drop
+
+    - name: daily_account_rollup
+      transform: aggregation/daily_rollup
+      params:
+        date_column: entry_date
+        group_by: account_id, cost_center_id, entry_type
+        sum_column: debit_amount
+        count_column: entry_id
+
+    - name: validate_accounts_not_null
+      transform: validation/not_null_check
+      params:
+        columns: report_date, account_id, total_value
+
+    - name: validate_no_negative_debits
+      transform: validation/range_check
+      params:
+        column: total_value
+        min_value: 0
+        max_value: 99999999
+
+  tags:
+    - finance
+    - gl
+    - accounting
